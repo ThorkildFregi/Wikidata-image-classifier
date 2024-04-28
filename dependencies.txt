@@ -1,0 +1,4 @@
+flask
+tensorflow==2.10
+sparqlwrapper
+pillow
