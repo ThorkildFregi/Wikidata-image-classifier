@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.20.8/dist/css/uikit.min.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.20.8/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.20.8/dist/js/uikit-icons.min.js"></script>
+</head>
+<body>
+    <div class="uk-container uk-align-center uk-flex uk-flex-center uk-flex-middle" uk-height-viewport="expand: true">
+        <div>
+            <h2>Create a model of image classification with wikidata image</h2>
+            <p class="uk-text-center">This site create a custom model of image classification and training it with image from wikidata.</p>
+            <form action="{{url_for('model_creation')}}" method="POST">
+                <textarea class="uk-textarea" rows="5" placeholder="Q-Items1 Q-Items2 Q-Items3...." id="class" name="class"></textarea>
+                <button class="uk-button uk-button-default  uk-margin-top uk-align-center" type="submit">Create model</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
