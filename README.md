@@ -12,7 +12,7 @@ A tool to create custom image classifier from wikidata image with tensorflow.
 
 *Step 1 :*
 
-Create a new environment with conda or venv.
+Create a new environment with conda or venv in python 3.9.
 
 *Step 2 :*
 
