@@ -139,3 +139,6 @@ def model_creation():
         return redirect(url_for("home"))
     else:
         return redirect(url_for("home"))
+
+if __name__ == "__main__":
+    app.run(debug=True)
