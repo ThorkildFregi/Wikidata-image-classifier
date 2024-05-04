@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <title>Home</title>
+
+    <link href="https://1000logos.net/wp-content/uploads/2022/09/Valorant-Emblem.png" rel="icon"/>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.20.8/dist/css/uikit.min.css" />
 
@@ -12,13 +21,20 @@
 <body>
     <div class="uk-container uk-align-center uk-flex uk-flex-center uk-flex-middle" uk-height-viewport="expand: true">
         <div>
-            <h2>Create a model of image classification with wikidata image</h2>
-            <p class="uk-text-center">This site create a custom model of image classification and training it with image from wikidata.</p>
-            <form action="{{url_for('model_creation')}}" method="POST">
-                <textarea class="uk-textarea" rows="5" placeholder="Q-Items1 Q-Items2 Q-Items3...." id="class" name="class"></textarea>
-                <button class="uk-button uk-button-default  uk-margin-top uk-align-center" type="submit">Create model</button>
+            <h1 class="uk-text-center">Predict your image with the model</h1>
+            <form action="{{url_for('loading_prediction')}}" method="POST" enctype="multipart/form-data">
+                <div uk-form-custom="target: true" class="uk-align-center">
+                    <input id="image" name="image" type="file" aria-label="Custom controls" accept="image/png, image/jpg, image/jpeg">
+                    <input class="uk-input uk-form-width-medium uk-align-center" type="text" placeholder="Select file" aria-label="Custom controls" disabled>
+                </div>
+                <button class="uk-button uk-button-default  uk-margin-top uk-align-center" type="submit">Predict image</button>
             </form>
+            <div class="uk-flex uk-flex-center">
+                <a class="uk-margin-right " href="{{url_for('create_model')}}">Create model</a> | <a class="uk-margin-left" href="{{url_for('download_model')}}">Download model</a>
+            </div>
         </div>
     </div>
+</body>
+</html>
 </body>
 </html>
