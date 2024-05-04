@@ -1,9 +1,12 @@
-from flask import Flask, render_template, url_for, request, redirect
+from flask import Flask, render_template, url_for, request, redirect, send_from_directory
 from SPARQLWrapper import SPARQLWrapper, JSON
 from tensorflow.keras import layers
 import tensorflow as tf
+import multiprocessing
 from PIL import Image
+import numpy as np
 import requests
+import shutil
 import os
 import io
 
@@ -42,6 +45,7 @@ def get_item_picture(item):
         wdt:P18 ?pic.
       SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
     }
+    LIMIT 100
     """
 
     sparql = SPARQLWrapper(endpoint_url, agent=user_agent)
@@ -57,7 +61,7 @@ def get_item_picture(item):
 
     return pictures
 
-def create_model(NUM_CLASSES):
+def create_image_classifier(NUM_CLASSES):
     model = tf.keras.Sequential([
         layers.Input(shape=[192, 192, 3]),
         layers.Rescaling(1. / 255),
@@ -79,34 +83,100 @@ def create_model(NUM_CLASSES):
 
     return model
 
+
+def image_processing(link):
+    imgIO = requests.get(link, stream=True, headers={"User-Agent": "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; RM-1152) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254"}).content
+    imgIO = io.BytesIO(imgIO)
+    imgIO.seek(0)
+    image = Image.open(imgIO)
+    image = image.resize((192, 192))
+
+    return image
+
 @app.route("/")
 def home():
+    if "model.h5" not in os.listdir():
+        return redirect(url_for("create_model"))
+
     return render_template("home.html")
 
-@app.route("/model_creation", methods=["post"])
-def model_creation():
+@app.route('/loading-prediction', methods=["post"])
+def loading_prediction():
+    if request.method == "POST":
+        file = request.files["image"]
+
+        image = Image.open(file)
+        image.save("prediction_image.png", "png")
+
+        return render_template("loading.html", next_page="prediction")
+    else:
+        return redirect(url_for("home"))
+
+@app.route('/prediction', methods=["get"])
+def prediction():
+    class_name = [dir for dir in os.listdir("./dataset/")]
+
+    model = tf.keras.models.load_model("model.h5")
+
+    image = Image.open("prediction_image.png")
+
+    image = image.resize((192, 192))
+    img_array = tf.keras.utils.img_to_array(image)
+    img_array = tf.expand_dims(img_array, 0)
+
+    predictions = model.predict(img_array)
+    score = tf.nn.softmax(predictions[0])
+
+    predicted_class = class_name[np.argmax(score)]
+    percentage = round(100 * np.max(score), 2)
+
+    os.remove("prediction_image.png")
+
+    return render_template("result.html", pclass=predicted_class, percentage=percentage)
+
+@app.route('/create_model')
+def create_model():
+    return render_template("create_model.html")
+
+@app.route('/loading-model-creation', methods=["post"])
+def loading_model_creation():
     if request.method == "POST":
         classes_text = request.form["class"]
+        epochs = request.form["epochs"]
+
+        return render_template("loading.html", next_page="model_creation", classes=classes_text, epochs=epochs)
+    else:
+        return redirect(url_for("home"))
+
+@app.route("/model-creation", methods=["post"])
+def model_creation():
+    if request.method == "POST":
+        if "dataset" in os.listdir():
+            shutil.rmtree("./dataset/")
+
+        if "model.h5" in os.listdir():
+            os.remove("model.h5")
+
+        classes_text = request.form["class"]
+        epochs = request.form["epochs"]
 
         CLASSES = classes_text.split()
         NUM_CLASSES = len(CLASSES)
 
-        os.mkdir(os.path.join("C:/Users/brase/PycharmProjects/imgClassifierTrainerWikidata/", "dataset"))
+        os.mkdir(os.path.join(os.path.dirname(__file__), "dataset"))
 
         for CLASS in CLASSES:
             NAME_CLASS = get_name_Q_item(CLASS)
 
-            os.mkdir(os.path.join("C:/Users/brase/PycharmProjects/imgClassifierTrainerWikidata/dataset/", NAME_CLASS))
+            os.mkdir(os.path.join("./dataset/", NAME_CLASS))
 
             imgs = get_item_picture(CLASS)
 
-            i = 1
-            for img in imgs:
-                imgIO = requests.get(img, stream=True, headers={"User-Agent": "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; RM-1152) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254"}).content
-                imgIO = io.BytesIO(imgIO)
-                imgIO.seek(0)
-                image = Image.open(imgIO)
-                image = image.resize((192, 192))
+            p = multiprocessing.Pool(20)
+            images = p.map(image_processing, imgs)
+
+            i = 0
+            for image in images:
                 image.save(f"./dataset/{NAME_CLASS}/{i}.png", 'png')
                 i += 1
 
@@ -115,7 +185,7 @@ def model_creation():
         img_width = 192
 
         train_ds = tf.keras.utils.image_dataset_from_directory(
-            "C:/Users/brase/PycharmProjects/imgClassifierTrainerWikidata/dataset/",
+            "./dataset/",
             validation_split=0.2,
             subset="training",
             seed=123,
@@ -123,22 +193,29 @@ def model_creation():
             batch_size=batch_size)
 
         val_ds = tf.keras.utils.image_dataset_from_directory(
-            "C:/Users/brase/PycharmProjects/imgClassifierTrainerWikidata/dataset/",
+            "./dataset/",
             validation_split=0.2,
             subset="validation",
             seed=123,
             image_size=(img_height, img_width),
             batch_size=batch_size)
 
-        model = create_model(NUM_CLASSES)
+        model = create_image_classifier(NUM_CLASSES)
 
-        model.fit(train_ds, validation_data=val_ds, epochs=200)
+        model.fit(train_ds, validation_data=val_ds, epochs=epochs)
 
         model.save("model.h5")
 
         return redirect(url_for("home"))
     else:
         return redirect(url_for("home"))
+
+
+@app.route('/uploads/model.h5')
+def download_model():
+    path = os.path.dirname(__file__)
+
+    return send_from_directory(path, "model.h5")
 
 if __name__ == "__main__":
     app.run(debug=True)
