@@ -3,12 +3,15 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 from tensorflow.keras import layers
 import tensorflow as tf
 import multiprocessing
-from PIL import Image
+from PIL import Image, ImageFile
+import urllib.request
 import numpy as np
 import requests
 import shutil
 import os
 import io
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 app = Flask(__name__)
 
@@ -82,16 +85,6 @@ def create_image_classifier(NUM_CLASSES):
     model.compile(optimizer="adam", loss=tf.keras.losses.sparse_categorical_crossentropy, metrics=["accuracy"])
 
     return model
-
-
-def image_processing(link):
-    imgIO = requests.get(link, stream=True, headers={"User-Agent": "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; RM-1152) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254"}).content
-    imgIO = io.BytesIO(imgIO)
-    imgIO.seek(0)
-    image = Image.open(imgIO)
-    image = image.resize((192, 192))
-
-    return image
 
 @app.route("/")
 def home():
@@ -172,11 +165,11 @@ def model_creation():
 
             imgs = get_item_picture(CLASS)
 
-            p = multiprocessing.Pool(20)
-            images = p.map(image_processing, imgs)
-
             i = 0
-            for image in images:
+            for img in imgs:
+                response = requests.get(img, stream=True, headers={"User-Agent": "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; RM-1152) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254"})
+                image = Image.open(io.BytesIO(response.content))
+                image = image.resize((192, 192))
                 image.save(f"./dataset/{NAME_CLASS}/{i}.png", 'png')
                 i += 1
 
@@ -202,7 +195,7 @@ def model_creation():
 
         model = create_image_classifier(NUM_CLASSES)
 
-        model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+        model.fit(train_ds, validation_data=val_ds, epochs=int(epochs))
 
         model.save("model.h5")
 
