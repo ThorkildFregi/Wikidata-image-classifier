@@ -107,7 +107,23 @@ def loading_prediction():
 
 @app.route('/prediction', methods=["get"])
 def prediction():
-    class_name = [dir for dir in os.listdir("./dataset/")]
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+        "./dataset/",
+        validation_split=0.2,
+        subset="training",
+        seed=123,
+        image_size=(img_height, img_width),
+        batch_size=batch_size)
+
+    val_ds = tf.keras.utils.image_dataset_from_directory(
+        "./dataset/",
+        validation_split=0.2,
+        subset="validation",
+        seed=123,
+        image_size=(img_height, img_width),
+        batch_size=batch_size)
+
+    class_names = train_ds.class_names
 
     model = tf.keras.models.load_model("model.h5")
 
@@ -120,7 +136,7 @@ def prediction():
     predictions = model.predict(img_array)
     score = tf.nn.softmax(predictions[0])
 
-    predicted_class = class_name[np.argmax(score)]
+    predicted_class = class_names[np.argmax(score)]
     percentage = round(100 * np.max(score), 2)
 
     os.remove("prediction_image.png")
@@ -210,5 +226,7 @@ def download_model():
 
     return send_from_directory(path, "model.h5")
 
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=7860, debug=True)
 if __name__ == "__main__":
     app.run(debug=True)
