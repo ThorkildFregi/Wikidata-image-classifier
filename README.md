@@ -39,3 +39,9 @@ Run ``main.py``.
 **Utilisation**
 
 After running ``main.py``, go to http://127.0.0.1/5000. You'll have a page with a box, in it you can write Q-Items from wikidata. Then, click on the "Create model" button. After some minutes, you will have a ``model.h5``, this is your model. You can download it and load it in any python file or use it in the application with the predict function.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+**Test it**
+
+If you want to test it got to <a href="https://huggingface.co/spaces/ThorkildFregi/Wikidata-image-classifier"> this space </a>
