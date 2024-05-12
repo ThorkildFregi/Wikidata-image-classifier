@@ -27,7 +27,7 @@ git clone https://github.com/ThorkildFregi/wikidata-image-classifier/
 Install the dependencies :
 
 ```bash
-pip install dependencies.txt
+pip install requirements.txt
 ```
 
 *Step 4 :*
