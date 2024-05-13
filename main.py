@@ -112,16 +112,16 @@ def prediction():
         validation_split=0.2,
         subset="training",
         seed=123,
-        image_size=(img_height, img_width),
-        batch_size=batch_size)
+        image_size=(192, 192),
+        batch_size=16)
 
     val_ds = tf.keras.utils.image_dataset_from_directory(
         "./dataset/",
         validation_split=0.2,
         subset="validation",
         seed=123,
-        image_size=(img_height, img_width),
-        batch_size=batch_size)
+        image_size=(192, 192),
+        batch_size=16)
 
     class_names = train_ds.class_names
 
@@ -170,7 +170,6 @@ def model_creation():
         epochs = request.form["epochs"]
 
         CLASSES = classes_text.split()
-        NUM_CLASSES = len(CLASSES)
 
         os.mkdir(os.path.join(os.path.dirname(__file__), "dataset"))
 
@@ -180,7 +179,7 @@ def model_creation():
             os.mkdir(os.path.join("./dataset/", NAME_CLASS))
 
             imgs = get_item_picture(CLASS)
-
+            
             i = 0
             for img in imgs:
                 response = requests.get(img, stream=True, headers={"User-Agent": "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; RM-1152) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254"})
@@ -209,6 +208,8 @@ def model_creation():
             image_size=(img_height, img_width),
             batch_size=batch_size)
 
+        NUM_CLASSES = len(train_ds.class_names)
+
         model = create_image_classifier(NUM_CLASSES)
 
         model.fit(train_ds, validation_data=val_ds, epochs=int(epochs))
@@ -226,7 +227,5 @@ def download_model():
 
     return send_from_directory(path, "model.h5")
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=7860, debug=True)
 if __name__ == "__main__":
     app.run(debug=True)
